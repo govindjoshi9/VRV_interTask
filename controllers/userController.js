@@ -1,109 +1,76 @@
-const User = require("../models/users");
+const User = require("../models/userModel");
 
-// LOGOUT: Clear user session
-exports.logout = (req, res) => {
-  try {
-    res.status(200).json({ message: "Logout successful" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error during logout", error: error.message });
-  }
-};
-
-// READ: Get all users (Admin only)
+// Get all users (Admin Only)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
-    res.status(200).json(users);
+    res.json(users);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching users", error: error.message });
+    res.status(500).json({ message: "Error fetching users" });
   }
 };
 
-// READ: Get a single user by ID
+// Get a single user by ID (Admin Only)
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (req.user.role !== "Admin" && req.user.userId !== user._id.toString()) {
-      return res.status(403).json({ message: "Unauthorized access" });
-    }
-
-    res.status(200).json(user);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching user", error: error.message });
+    res.status(500).json({ message: "Error fetching user" });
   }
 };
 
-// CREATE: Create a new user (Admin only)
+// Create a new user (Admin Only)
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { username, password, role } = req.body;
+    const existingUser = await User.findOne({ username });
+    if (existingUser)
+      return res.status(400).json({ message: "Username already exists" });
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists" });
-    }
-
-    const newUser = new User({ name, email, password, role });
-    await newUser.save();
-
-    res
-      .status(201)
-      .json({ message: "User created successfully", user: newUser });
+    const user = await User.create({ username, password, role });
+    res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating user", error: error.message });
+    res.status(500).json({ message: "Error creating user" });
   }
 };
 
-// UPDATE: Update a user by ID (Admin only)
+// Update a user (Admin Only)
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, role } = req.body;
+    const { username, role } = req.body;
     const user = await User.findById(req.params.id);
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.name = name || user.name;
-    user.email = email || user.email;
+    user.username = username || user.username;
     user.role = role || user.role;
-
     await user.save();
-    res.status(200).json({ message: "User updated successfully", user });
+
+    res.json({ message: "User updated successfully", user });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating user", error: error.message });
+    res.status(500).json({ message: "Error updating user" });
   }
 };
 
-// DELETE: Delete a user by ID (Admin only)
+// Delete a user (Admin Only)
 exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json({ message: "User deleted successfully" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "User deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error deleting user", error: error.message });
+    res.status(500).json({ message: "Error deleting user" });
+  }
+};
+
+// Logout functionality
+exports.logout = async (req, res) => {
+  try {
+    // Simply invalidate the client-side token
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error during logout" });
   }
 };

@@ -1,34 +1,25 @@
 const express = require("express");
-const router = express.Router();
 const {
-  logout,
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  logout,
 } = require("../controllers/userController");
-const {
-  authenticateJWT,
-  authorizeRole,
-} = require("../middleware/authMiddleware");
+const authMiddleware = require("../middlewares/authMiddleware");
+const roleMiddleware = require("../middlewares/roleMiddleware");
 
-// LOGOUT
-router.post("/logout", authenticateJWT, logout);
+const router = express.Router();
 
-// READ: Get all users (Admin only)
-router.get("/", authenticateJWT, authorizeRole("Admin"), getAllUsers);
+// User CRUD operations (Admin Only)
+router.get("/", authMiddleware, roleMiddleware(["Admin"]), getAllUsers); // Get all users
+router.get("/:id", authMiddleware, roleMiddleware(["Admin"]), getUserById); // Get single user by ID
+router.post("/", authMiddleware, roleMiddleware(["Admin"]), createUser); // Create a new user
+router.put("/:id", authMiddleware, roleMiddleware(["Admin"]), updateUser); // Update a user
+router.delete("/:id", authMiddleware, roleMiddleware(["Admin"]), deleteUser); // Delete a user
 
-// READ: Get a single user by ID
-router.get("/:id", authenticateJWT, getUserById);
-
-// CREATE: Create a new user (Admin only)
-router.post("/", authenticateJWT, authorizeRole("Admin"), createUser);
-
-// UPDATE: Update a user by ID (Admin only)
-router.put("/:id", authenticateJWT, authorizeRole("Admin"), updateUser);
-
-// DELETE: Delete a user by ID (Admin only)
-router.delete("/:id", authenticateJWT, authorizeRole("Admin"), deleteUser);
+// Logout (Accessible to all logged-in users)
+router.post("/logout", authMiddleware, logout);
 
 module.exports = router;

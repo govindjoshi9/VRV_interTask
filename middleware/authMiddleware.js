@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const authMiddleware = (req, res, next) => {
+const authenticateJWT = (req, res, next) => {
   const token = req.header("Authorization")?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token provided" });
 
@@ -13,4 +13,13 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+module.exports = {
+  authenticateJWT,
+  authorizeRole: (role) => (req, res, next) => {
+    if (req.user && req.user.role === role) {
+      next();
+    } else {
+      res.status(403).json({ message: "Unauthorized access" });
+    }
+  },
+};
